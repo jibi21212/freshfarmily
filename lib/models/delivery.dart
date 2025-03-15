@@ -19,16 +19,15 @@ class Delivery {
     required this.product,
   });
 
-  factory Delivery.fromJson(Map<String, dynamic> json){
+  factory Delivery.fromJson(Map<String, dynamic> json) {
     return Delivery(
       id: json['id'] ?? '',
       price: json['price']?.toDouble() ?? 0.0,
       description: json['description'] ?? '',
-      from: json['from'],
-      to:json['to'] ?? '',
-      distance:json['distance'] ?? '',
-      product: json['product'] ?? '',
+      from: json['from'] ?? '', // Added fallback for safety.
+      to: json['to'] ?? '',
+      distance: json['distance']?.toDouble() ?? 0.0,
+      product: Product.fromJson(json['product']),
     );
   }
-
 }

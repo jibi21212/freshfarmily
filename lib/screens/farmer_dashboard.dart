@@ -32,7 +32,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>{
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Buyer Dashboard'),
+        title: const Text('Farmer Dashboard'),
       ),
       // Display the content based on the selected index.
       body: _widgetOptions.elementAt(_selectedIndex),
