@@ -1,25 +1,24 @@
 import 'package:flutter/material.dart';
-import '../widgets/nav_bar.dart';
+import '../widgets/common_scaffold.dart';
+import 'products_screen.dart'; // Import the new ProductsScreen
 
 class BuyerDashboard extends StatefulWidget {
-  const BuyerDashboard({Key? key}) : super(key: key);
+  const BuyerDashboard({super.key});
 
   @override
   _BuyerDashboardState createState() => _BuyerDashboardState();
 }
 
 class _BuyerDashboardState extends State<BuyerDashboard> {
-  // The current selected index in the bottom nav bar.
   int _selectedIndex = 0;
 
-  // A list of widgets representing each tab's content.
-  static const List<Widget> _widgetOptions = <Widget>[
-    Center(child: Text('Home Screen Content', style: TextStyle(fontSize: 18))),
-    Center(child: Text('Products Screen Content', style: TextStyle(fontSize: 18))),
-    Center(child: Text('Profile Screen Content', style: TextStyle(fontSize: 18))),
+  // Modify the widget options to show your ProductsScreen on one tab.
+  static final List<Widget> _widgetOptions = <Widget>[
+    const Center(child: Text('Home Screen Content', style: TextStyle(fontSize: 18))),
+    const ProductsScreen(),  // Displays products list.
+    const Center(child: Text('Profile Screen Content', style: TextStyle(fontSize: 18))),
   ];
 
-  // When a tab is tapped, update the index.
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -28,17 +27,11 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buyer Dashboard'),
-      ),
-      // Display the content based on the selected index.
+    return CommonScaffold(
+      title: 'Buyer Dashboard',
       body: _widgetOptions.elementAt(_selectedIndex),
-      // Attach the custom nav bar at the bottom.
-      bottomNavigationBar: NavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
+      selectedIndex: _selectedIndex,
+      onItemTapped: _onItemTapped,
     );
   }
 }
