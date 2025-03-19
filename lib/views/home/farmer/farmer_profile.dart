@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:freshfarmily/views/home/farmer/edit_profile.dart';
 
 class FarmerProfile extends StatelessWidget {
   const FarmerProfile({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Replace placeholder data with real data later.
+    // Placeholder profile data; in a real app this comes from the backend.
+    String farmerName = "John Doe";
+    String email = "john.doe@example.com";
+    String profileImage =
+        "https://via.placeholder.com/150"; // A placeholder image URL
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Farmer Profile"),
@@ -14,24 +20,33 @@ class FarmerProfile extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const CircleAvatar(
+            // Display Profile Picture
+            CircleAvatar(
               radius: 50,
-              backgroundImage: AssetImage('assets/images/farmer_profile.jpg'),
+              backgroundImage: NetworkImage(profileImage),
             ),
             const SizedBox(height: 16),
+            // Display Farmer Name
             Text(
-              "Farmer Name",
+              farmerName,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
+            // Display Email
             Text(
-              "farmer@example.com",
+              email,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                // Navigate to an EditProfile screen if required.
+                // Navigate to the Edit Profile screen.
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditProfilePage(),
+                  ),
+                );
               },
               child: const Text("Edit Profile"),
             ),
