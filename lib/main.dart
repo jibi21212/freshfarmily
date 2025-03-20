@@ -1,4 +1,6 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:freshfarmily/firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'package:freshfarmily/models/user.dart';
 import 'package:freshfarmily/providers/listing_provider.dart';
@@ -7,18 +9,31 @@ import 'package:freshfarmily/providers/cart_provider.dart';
 import 'package:freshfarmily/providers/market_provider.dart';
 import 'package:freshfarmily/views/home/dashboard.dart';
 
-void main() {
-  // Create a dummy user with the desired role.
-  // Change the role to UserRole.farmer or UserRole.deliveryAgent as needed.
-  User dummyUser = User(
+User dummyUser = User(
     id: '1',
     name: 'Test User',
     role: UserRole.deliveryAgent,
     created: DateTime.now(), plainPassword: '',
+);
+Future<void> main() async {
+  // Create a dummy user with the desired role.
+  // Change the role to UserRole.farmer or UserRole.deliveryAgent as needed.
+ WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
+ 
 
-  runApp(
-    MultiProvider(
+
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ListingProvider()),
         ChangeNotifierProvider(create: (_) => DeliveryProvider()),
@@ -30,6 +45,6 @@ void main() {
         title: 'FreshFarmily',
         home: Dashboards(currentUser: dummyUser),
       ),
-    ),
-  );
+    );
+  }
 }
