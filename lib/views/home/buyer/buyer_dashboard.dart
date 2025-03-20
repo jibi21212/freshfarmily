@@ -19,7 +19,7 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
   final List<Widget> _pages = const [
     BuyerHomePage(),   // Your home page (e.g., featured products or marketplace)
     CartPage(),        // The shopping cart page
-    BuyerProfile(),    // The buyer's profile page
+    BuyerProfilePage(),    // The buyer's profile page
   ];
 
   void _onTabTapped(int index) {

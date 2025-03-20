@@ -18,7 +18,7 @@ class _DeliveryDashboardState extends State<DeliveryDashboard> {
   final List<Widget> _pages = const [
     DeliveryHomePage(),
     DeliveriesPage(),
-    DeliveryProfile(),
+    DeliveryProfilePage(),
   ];
 
   void _onTabTapped(int index) {
