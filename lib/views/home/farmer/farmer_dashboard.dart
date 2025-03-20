@@ -18,7 +18,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   final List<Widget> _pages = const [
     FarmerHomePage(),
     ListingsPage(),
-    FarmerProfile(),
+    FarmerProfilePage(),
   ];
 
   void _onTabTapped(int index) {
