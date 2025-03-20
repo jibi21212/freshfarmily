@@ -12,19 +12,14 @@ import 'package:freshfarmily/views/home/dashboard.dart';
 User dummyUser = User(
     id: '1',
     name: 'Test User',
-    role: UserRole.deliveryAgent,
+    role: UserRole.farmer,
     created: DateTime.now(), plainPassword: '',
 );
 Future<void> main() async {
-  // Create a dummy user with the desired role.
-  // Change the role to UserRole.farmer or UserRole.deliveryAgent as needed.
  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
- 
-
-
   runApp(MyApp());
 }
 
