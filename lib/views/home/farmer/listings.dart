@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:freshfarmily/providers/listing_provider.dart';
 import 'package:freshfarmily/widgets/item_cards/listing_card.dart';
 import 'package:freshfarmily/views/home/farmer/make_listing.dart';
-import 'package:freshfarmily/views/home/farmer/edit_listing.dart';
 
 class ListingsPage extends StatelessWidget {
   const ListingsPage({super.key});
@@ -35,7 +34,7 @@ class ListingsPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            EditListingPage(listing: listing),
+                            CombinedListingForm(listing: listing),
                       ),
                     );
                   },
@@ -44,7 +43,7 @@ class ListingsPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            EditListingPage(listing: listing),
+                            CombinedListingForm(listing: listing),
                       ),
                     );
                   },
@@ -61,7 +60,7 @@ class ListingsPage extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const MakeListingPage(),
+              builder: (context) => const CombinedListingForm(),
             ),
           );
         },
