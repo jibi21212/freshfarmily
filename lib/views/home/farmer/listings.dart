@@ -1,66 +1,103 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:freshfarmily/providers/listing_provider.dart';
+import 'package:freshfarmily/models/listing.dart';
 import 'package:freshfarmily/widgets/item_cards/listing_card.dart';
 import 'package:freshfarmily/views/home/farmer/make_listing.dart';
 
 class ListingsPage extends StatelessWidget {
-  const ListingsPage({super.key});
+  final String farmerId;
+  const ListingsPage({super.key, required this.farmerId});
 
   @override
   Widget build(BuildContext context) {
-    final listings = context.watch<ListingProvider>().listings;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Your Listings"),
       ),
-      body: listings.isEmpty
-          ? Center(
-              child: Text(
-                "No listings available. \nAdd a listing now!",
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            )
-          : ListView.builder(
-              itemCount: listings.length,
-              itemBuilder: (context, index) {
-                final listing = listings[index];
-                return ListingCard(
-                  listing: listing,
-                  onTap: () {
-                    // For example, navigate to an editing screen:
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            CombinedListingForm(listing: listing),
-                      ),
-                    );
-                  },
-                  onEdit: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            CombinedListingForm(listing: listing),
-                      ),
-                    );
-                  },
-                  onDelete: () {
-                    // Optionally add a confirmation dialog before deleting.
-                    context.read<ListingProvider>().deleteListing(listing.id);
-                  },
-                );
-              },
-            ),
+      body: FutureBuilder(
+        future: FirebaseFirestore.instance
+            .collection('farmers')
+            .doc(farmerId)
+            .get(),
+        builder: (context, AsyncSnapshot<DocumentSnapshot> farmerSnapshot) {
+          if (!farmerSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final farmerData = farmerSnapshot.data!.data() as Map<String, dynamic>;
+          final farmName = farmerData['farm'] ?? 'Unknown Farmer';
+
+          return StreamBuilder(
+            stream: FirebaseFirestore.instance
+                .collection('product_listings')
+                .where('farmerId', isEqualTo: farmerId) // Add this filter
+                .snapshots(),
+            builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return ListView(
+                children: snapshot.data!.docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  // Safe conversion for price.
+                  double priceValue;
+                  if (data['price'] == null) {
+                    priceValue = 0.0;
+                  } else if (data['price'] is int) {
+                    priceValue = (data['price'] as int).toDouble();
+                  } else {
+                    priceValue = data['price'] as double;
+                  }
+
+                  // Safe conversion for quantity.
+                  int available =
+                      data['available'] != null ? data['available'] as int : 0;
+
+                  // Safe conversion for posted date.
+                  DateTime postedValue;
+                  if (data['posted'] != null && data['posted'] is Timestamp) {
+                    postedValue = (data['posted'] as Timestamp).toDate();
+                  } else if (data['posted'] != null &&
+                      data['posted'] is String) {
+                    postedValue = DateTime.tryParse(data['posted'] as String) ??
+                        DateTime.now();
+                  } else {
+                    postedValue = DateTime.now();
+                  }
+
+                  // Provide a default image URL if missing.
+                  String imageUrl = data['imageUrl'] ?? 'https://via.placeholder.com/150';
+
+                  final listing = Listing(
+                    id: doc.id,
+                    name: data['name'] ?? '',
+                    price: priceValue,
+                    available: available ?? 0,
+                    posted: postedValue,
+                    isActive: data['isActive'] ?? true,
+                    farm: farmName,
+                    farmerId: farmerId,
+                    description: data['description'] ?? '',
+                    productType: data['productType'] ?? '',
+                    imageUrl: imageUrl,
+                  );
+                  
+                  return ListingCard(
+                    listing: listing,
+                  );
+                }).toList(),
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to the make listing page.
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CombinedListingForm(),
+              builder: (context) => CombinedListingForm(farmerId: farmerId),
             ),
           );
         },

@@ -1,5 +1,5 @@
 // What the product is
-import 'package:tuple/tuple.dart';
+
 
 class Product {
   final String id;
@@ -13,7 +13,6 @@ class Product {
   final int quantity;
   final DateTime? harvestDate;
   final DateTime? expiryDate;
-  final Tuple2<double, String> deliveryEstimate;
 
   Product({
     required this.id,
@@ -27,7 +26,6 @@ class Product {
     this.quantity = 0,
     this.harvestDate,
     this.expiryDate,
-    required this.deliveryEstimate,
   });
 
   Map<String, dynamic> toJson() {
@@ -43,19 +41,10 @@ class Product {
       'quantity': quantity,
       'harvestDate': harvestDate?.toIso8601String(),
       'expiryDate': expiryDate?.toIso8601String(),
-      'deliveryEstimate': {
-        'value': deliveryEstimate.item1,
-        'type': deliveryEstimate.item2,
-      },
     };
   }
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    final deliveryJson = json['deliveryEstimate'] as Map<String, dynamic>;
-    final Tuple2<double, String> deliveryEstimate = Tuple2(
-      (deliveryJson['value'] as num).toDouble(),
-      deliveryJson['type'] as String,
-    );
 
     return Product(
       id: json['id'] as String,
@@ -73,7 +62,6 @@ class Product {
       expiryDate: json['expiryDate'] != null
           ? DateTime.parse(json['expiryDate'] as String)
           : null,
-      deliveryEstimate: deliveryEstimate,
     );
   }
 }

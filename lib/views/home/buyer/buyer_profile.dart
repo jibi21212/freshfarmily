@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:freshfarmily/views/login/login.dart';
+
 
 class BuyerProfilePage extends StatefulWidget {
-  const BuyerProfilePage({super.key});
+  final String uid;
+  const BuyerProfilePage({super.key, required this.uid});
 
   @override
   State<BuyerProfilePage> createState() => _BuyerProfilePageState();
@@ -9,21 +14,53 @@ class BuyerProfilePage extends StatefulWidget {
 
 class _BuyerProfilePageState extends State<BuyerProfilePage> {
   bool isEditing = false;
-  String name = "Jane Doe";
-  String email = "jane.doe@example.com";
-  String shippingAddress = "123 Main St, City, Country";
-  String profileImage = "https://via.placeholder.com/150";
+  bool isLoading = true;
+  String name = "";
+  String email = "";
+  String shippingAddress = "";
+  String profileImage = "";
 
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _addressController;
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: name);
-    _emailController = TextEditingController(text: email);
-    _addressController = TextEditingController(text: shippingAddress);
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _addressController = TextEditingController();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      DocumentSnapshot doc = await _firestore
+          .collection('buyers')
+          .doc(widget.uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        setState(() {
+          name = data['name'] ?? '';
+          email = data['email'] ?? '';
+          shippingAddress = data['address'] ?? '';
+          profileImage = data['profileImage'] ?? '';  // If you have profile images
+          
+          _nameController.text = name;
+          _emailController.text = email;
+          _addressController.text = shippingAddress;
+          
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -40,18 +77,39 @@ class _BuyerProfilePageState extends State<BuyerProfilePage> {
     });
   }
 
-  void _saveProfile() {
-    setState(() {
-      name = _nameController.text;
-      email = _emailController.text;
-      shippingAddress = _addressController.text;
-      isEditing = false;
-    });
-    // TODO: Integrate with backend if needed.
+ Future<void> _saveProfile() async {
+    try {
+      await _firestore.collection('buyers').doc(widget.uid).update({
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'address': _addressController.text,
+      });
+
+      setState(() {
+        name = _nameController.text;
+        email = _emailController.text;
+        shippingAddress = _addressController.text;
+        isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Buyer Profile"),
@@ -70,9 +128,38 @@ class _BuyerProfilePageState extends State<BuyerProfilePage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: isEditing ? _buildEditForm() : _buildProfileView(),
+        child: Column(
+          children: [
+            Expanded(
+              child: isEditing ? _buildEditForm() : _buildProfileView(),
+            ),
+            ElevatedButton(
+              onPressed: _signOut,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Sign Out"),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  
+  Future<void> _signOut() async {
+    try {
+      await _auth.signOut();
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing out: $e')),
+      );
+    }
   }
 
   Widget _buildProfileView() {

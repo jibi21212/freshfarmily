@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:freshfarmily/providers/listing_provider.dart';
 import 'package:freshfarmily/widgets/navbar.dart';
 import 'package:freshfarmily/views/home/farmer/farmer_home.dart';
 import 'package:freshfarmily/views/home/farmer/listings.dart';
 import 'package:freshfarmily/views/home/farmer/farmer_profile.dart';
 import 'package:freshfarmily/models/user.dart';
+import 'package:provider/provider.dart';
 
 class FarmerDashboard extends StatefulWidget {
-  const FarmerDashboard({super.key});
+  final String uid;
+  const FarmerDashboard({super.key, required this.uid});
 
   @override
   State<FarmerDashboard> createState() => _FarmerDashboardState();
@@ -15,16 +18,19 @@ class FarmerDashboard extends StatefulWidget {
 class _FarmerDashboardState extends State<FarmerDashboard> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    FarmerHomePage(),
-    ListingsPage(),
-    FarmerProfilePage(),
-  ];
+  late final List<Widget> _pages;
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+  @override
+  void initState() {
+    super.initState();
+
+        Provider.of<ListingProvider>(context, listen: false).initializeListings(widget.uid);
+
+    _pages = [
+      const FarmerHomePage(),
+      ListingsPage(farmerId: widget.uid),
+      FarmerProfilePage(uid: widget.uid),
+    ];
   }
 
   @override
@@ -33,7 +39,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       body: _pages[_currentIndex],
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _onTabTapped,
+        onTap: (index) => setState(() => _currentIndex = index),
         role: UserRole.farmer,
       ),
     );

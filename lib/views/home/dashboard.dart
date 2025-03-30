@@ -5,19 +5,24 @@ import 'package:freshfarmily/views/home/delivery/delivery_dashboard.dart';
 import 'package:freshfarmily/models/user.dart';
 
 class Dashboards extends StatelessWidget {
-  final User currentUser;
+  final String uid;
+  final UserRole role;
 
-  const Dashboards({super.key, required this.currentUser});
+  const Dashboards({
+    super.key, 
+    required this.uid,
+    required this.role,
+  });
 
   @override
   Widget build(BuildContext context) {
-    switch (currentUser.role) {
+    switch (role) {
       case UserRole.farmer:
-        return const FarmerDashboard();
+        return FarmerDashboard(uid: uid);  // Add uid parameter
       case UserRole.deliveryAgent:
-        return const DeliveryDashboard();
+        return DeliveryDashboard(uid: uid);  // Add uid parameter
       case UserRole.buyer:
-        return const BuyerDashboard();
+        return BuyerDashboard(uid: uid);  // Add uid parameter
     }
   }
 }

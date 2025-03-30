@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum UserRole {
   buyer,
   farmer,
@@ -7,84 +9,62 @@ enum UserRole {
 class User {
   final String id;
   final String name;
+  final String email;
   final UserRole role;
-  final DateTime created;
-  final bool verificationRequired;
-  final String _hashedPassword;
+  final DateTime createdAt;
+  final String address;
+  final String zipcode;
+  final List<dynamic> purchaseHistory;
 
-  // Public getter for the hashed password if needed.
-  String get hashedPassword => _hashedPassword;
-
-  // When creating a new User, you supply a plain text password that is hashed before storing.
   User({
     required this.id,
     required this.name,
+    required this.email,
     required this.role,
-    required this.created,
-    required String plainPassword,
-  })  : _hashedPassword = _hashPassword(plainPassword),
-        verificationRequired = role != UserRole.buyer;
+    required this.createdAt,
+    required this.address,
+    required this.zipcode,
+    required this.purchaseHistory,
+  });
 
-  // Constructor for when you already have a hashed password (e.g., when loading from storage).
-  User.withHashedPassword({
-    required this.id,
-    required this.name,
-    required this.role,
-    required this.created,
-    required String hashedPassword,
-    bool? verificationRequired,
-  })  : _hashedPassword = hashedPassword,
-        verificationRequired = verificationRequired ?? (role != UserRole.buyer);
-
-  // Stub for a real password hashing function.
-  // In production, use a secure package like bcrypt or argon2 to hash passwords.
-  static String _hashPassword(String plainPassword) {
-    // For example, using the bcrypt package:
-    // return BCrypt.hashpw(plainPassword, BCrypt.gensalt());
-    // Here we simply return the plainPassword as a placeholder.
-    return plainPassword; // DO NOT use this in production!
-  }
-
-  // Method to verify a plain text password against the stored (hashed) password.
-  bool verifyPassword(String plainPassword) {
-    // In production, use:
-    // return BCrypt.checkpw(plainPassword, _hashedPassword);
-    return plainPassword == _hashedPassword;
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'role': role.toString().split('.').last,
-      'created': created.toIso8601String(),
-      'verificationRequired': verificationRequired,
-      'hashedPassword': _hashedPassword,
-    };
-  }
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    final roleStr = json['role'] as String;
-    UserRole role;
-    switch (roleStr) {
-      case 'farmer':
-        role = UserRole.farmer;
-        break;
-      case 'deliveryAgent':
-        role = UserRole.deliveryAgent;
-        break;
-      case 'buyer':
-      default:
-        role = UserRole.buyer;
-    }
-
-    return User.withHashedPassword(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      role: role,
-      created: DateTime.parse(json['created'] as String),
-      hashedPassword: json['hashedPassword'] as String,
-      verificationRequired: json['verificationRequired'] as bool? ?? (role != UserRole.buyer),
+  // Factory constructor to create a User from Firestore data
+  factory User.fromFirestore(Map<String, dynamic> data, String documentId) {
+    return User(
+      id: documentId,
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      role: _stringToUserRole(data['role'] ?? 'buyer'),
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      address: data['address'] ?? '',
+      zipcode: data['zipcode'] ?? '',
+      purchaseHistory: data['purchaseHistory'] ?? [],
     );
+  }
+
+  // Helper method to convert string to UserRole enum
+  static UserRole _stringToUserRole(String role) {
+    switch (role.toLowerCase()) {
+      case 'buyer':
+        return UserRole.buyer;
+      case 'farmer':
+        return UserRole.farmer;
+      case 'delivery_agent':
+        return UserRole.deliveryAgent;
+      default:
+        return UserRole.buyer;
+    }
+  }
+
+  // Convert User to Map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'email': email,
+      'role': role.toString().split('.').last,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'address': address,
+      'zipcode': zipcode,
+      'purchaseHistory': purchaseHistory,
+    };
   }
 }

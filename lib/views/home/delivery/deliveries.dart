@@ -1,72 +1,141 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:freshfarmily/models/delivery.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:freshfarmily/models/delivery.dart'; // Must export Delivery and DeliveryStatus.
+import 'package:freshfarmily/views/home/delivery/delivery_details.dart';
 import 'package:freshfarmily/widgets/item_cards/delivery_card.dart';
-import 'package:uuid/uuid.dart';
-import 'package:tuple/tuple.dart';
-import 'package:freshfarmily/models/product.dart';
+import 'package:intl/intl.dart';
 
-class DeliveriesPage extends StatelessWidget {
-  const DeliveriesPage({super.key});
+DeliveryStatus parseDeliveryStatus(String statusString) {
+  switch (statusString) {
+    case 'inTransit':
+      return DeliveryStatus.inTransit;
+    case 'delivered':
+      return DeliveryStatus.delivered;
+    case 'canceled':
+      return DeliveryStatus.canceled;
+    case 'pending':
+    default:
+      return DeliveryStatus.pending;
+  }
+}
 
-  // Dummy data simulating deliveries already accepted/assigned to this delivery agent.
-  List<Delivery> _getAssignedDeliveries() {
-    final dummyProduct = Product(
-      id: const Uuid().v4(),
-      name: "Fresh Bananas",
-      price: 1.50,
-      imageUrl: "https://via.placeholder.com/150",
-      company: "Tropical Farms",
-      posted: DateTime.now().subtract(const Duration(days: 1)),
-      description: "Sweet and ripe bananas",
-      category: "Fruit",
-      quantity: 200,
-      harvestDate: DateTime.now().subtract(const Duration(days: 2)),
-      expiryDate: DateTime.now().add(const Duration(days: 5)),
-      deliveryEstimate: const Tuple2(1.5, "days"),
-    );
-    
-    return [
-      Delivery(
-        id: const Uuid().v4(),
-        product: dummyProduct,
-        deliveryAddress: "789 Order Ln, Delivery City",
-        scheduledTime: DateTime.now().add(const Duration(hours: 1)),
-        status: DeliveryStatus.inTransit,
-        deliveryFee: 3.50,
-      ),
-    ];
+class DeliveriesPage extends StatefulWidget {
+  const DeliveriesPage({Key? key}) : super(key: key);
+
+  @override
+  _DeliveriesPageState createState() => _DeliveriesPageState();
+}
+
+class _DeliveriesPageState extends State<DeliveriesPage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late String userId;
+  final DateFormat _dateFormat = DateFormat.yMMMd().add_jm();
+
+  @override
+  void initState() {
+    super.initState();
+    final user = _auth.currentUser;
+    userId = user?.uid ?? '';
+  }
+
+  // Query orders accepted by this delivery agent.
+  Stream<QuerySnapshot> _getAssignedOrders() {
+    return FirebaseFirestore.instance
+        .collection('orders')
+        .where('deliveryAgent', isEqualTo: userId)
+        .snapshots();
+  }
+
+  // Update the order status (e.g., mark as delivered).
+  Future<void> _updateOrderStatus(String orderId, String newStatus) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(orderId)
+          .update({'status': newStatus});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Order updated to $newStatus')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating status: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final assignedDeliveries = _getAssignedDeliveries();
-
+    if (userId.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text('Please sign in to view your deliveries.')),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Assigned Deliveries"),
+        title: const Text("My Deliveries"),
       ),
-      body: assignedDeliveries.isEmpty
-          ? Center(
-              child: Text(
-                "No assigned orders at this time.",
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            )
-          : ListView.builder(
-              itemCount: assignedDeliveries.length,
-              itemBuilder: (context, index) {
-                final delivery = assignedDeliveries[index];
-                return DeliveryCard(
-                  delivery: delivery,
-                  onTap: () {
-                    // Possibly navigate to delivery details where the driver can update status.
-                  },
-                  onUpdateStatus: () {
-                    // Implement update status functionality (for instance, marking as delivered).
-                  },
-                );
-              },
-            ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _getAssignedOrders(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
+            return const Center(child: Text("No deliveries assigned."));
+          }
+          List<Delivery> deliveries = docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            DateTime scheduledTime = DateTime.now();
+            if (data['createdAt'] is Timestamp) {
+              scheduledTime = (data['createdAt'] as Timestamp).toDate();
+            }
+            final rawStatus = data['status'] as String? ?? 'pending';
+            final status = parseDeliveryStatus(rawStatus);
+            String listingName = '';
+            if (data['items'] is List && (data['items'] as List).isNotEmpty) {
+              final firstItem = (data['items'] as List).first as Map<String, dynamic>;
+              listingName = firstItem['name'] as String? ?? '';
+            }
+            final String imageUrl = (data['imageUrl'] as String?)?.isNotEmpty == true
+                ? data['imageUrl'] as String
+                : 'https://via.placeholder.com/150';
+            return Delivery(
+              id: doc.id,
+              deliveryAddress: data['deliveryAddress'] as String? ?? '',
+              scheduledTime: scheduledTime,
+              status: status,
+              deliveryFee: (data['deliveryFee'] ?? 0).toDouble(),
+              listingName: listingName,
+              imageUrl: imageUrl,
+            );
+          }).toList();
+
+          return ListView.builder(
+            itemCount: deliveries.length,
+            itemBuilder: (context, index) {
+              final delivery = deliveries[index];
+              return DeliveryCard(
+                delivery: delivery,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DeliveryDetailsPage(delivery: delivery),
+                    ),
+                  );
+                },
+                onUpdateStatus: () async {
+                  // For example, mark the order as delivered.
+                  await _updateOrderStatus(delivery.id, 'delivered');
+                },
+                buttonText: "Update Status",
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

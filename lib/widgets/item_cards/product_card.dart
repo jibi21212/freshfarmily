@@ -1,20 +1,21 @@
-// What populates the buyers marketplace (products)
 import 'package:flutter/material.dart';
-import 'package:freshfarmily/models/product.dart';
+import 'package:freshfarmily/models/listing.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProductCard extends StatefulWidget {
-  final Product product;
-  final VoidCallback? onTap; // Go to product_details view
-  final VoidCallback? onAdd; // Add to cart, then switch the button to allow user to easily remove from cart
-  final VoidCallback? onRemove; // Remove from cart, then switch the button to allow user to add to cart again
+  final Listing listing;
+  final VoidCallback? onTap; // Navigate to product details.
+  final VoidCallback? onAdd; // Callback when item is added to cart.
+  final VoidCallback? onRemove; // Callback when item is removed from cart.
 
   const ProductCard({
-    super.key,
-    required this.product,
+    Key? key,
+    required this.listing,
     this.onTap,
     this.onAdd,
     this.onRemove,
-  });
+  }) : super(key: key);
 
   @override
   State<ProductCard> createState() => _ProductCardState();
@@ -22,15 +23,82 @@ class ProductCard extends StatefulWidget {
 
 class _ProductCardState extends State<ProductCard> {
   bool inCart = false;
- 
-  void toggleCart() { // Logic to allow for functionality outlined above for the voidCallBacks for onAdd and onRemove
-    setState(() {
-      inCart = !inCart;
-    });
-    if (inCart) {
-      if (widget.onAdd != null) widget.onAdd!();
-    } else {
-      if (widget.onRemove != null) widget.onRemove!();
+
+
+@override
+  void initState() {
+    super.initState();
+    _checkIfInCart();
+  }
+
+  // Check Firestore to determine if the item is already in the cart.
+  Future<void> _checkIfInCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('buyers')
+          .doc(user.uid)
+          .collection('cart')
+          .doc(widget.listing.id)
+          .get();
+      if (doc.exists) {
+        setState(() {
+          inCart = true;
+        });
+      }
+    }
+  }
+
+  // Toggle the cart state and update Firestore accordingly.
+  Future<void> toggleCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please sign in to add items to your cart.')),
+      );
+      return;
+    }
+    final userId = user.uid;
+    try {
+      if (!inCart) {
+        // Add the item to the cart.
+        await FirebaseFirestore.instance
+          .collection('buyers')
+          .doc(userId)
+          .collection('cart')
+          .doc(widget.listing.id)
+          .set({
+            'listingId': widget.listing.id,
+            'name': widget.listing.name,
+            'price': widget.listing.price,
+            'quantity': 1, // Default cart quantity
+            'available': widget.listing.available, // So we can limit increments in the cart
+            'imageUrl': widget.listing.imageUrl,
+            'addedAt': FieldValue.serverTimestamp(),
+            'description': widget.listing.description,
+          });
+
+      } else {
+        // Remove the item from the cart.
+        await FirebaseFirestore.instance
+            .collection('buyers')
+            .doc(userId)
+            .collection('cart')
+            .doc(widget.listing.id)
+            .delete();
+      }
+      setState(() {
+        inCart = !inCart;
+      });
+      if (inCart) {
+        if (widget.onAdd != null) widget.onAdd!();
+      } else {
+        if (widget.onRemove != null) widget.onRemove!();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating cart: $e')));
     }
   }
 
@@ -41,62 +109,69 @@ class _ProductCardState extends State<ProductCard> {
       margin: const EdgeInsets.all(8),
       child: InkWell(
         onTap: widget.onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Product image
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                widget.product.imageUrl,
-                fit: BoxFit.cover,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8.0),
+                child: Image.network(
+                  widget.listing.imageUrl,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-            // Product name and company
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.listing.name,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "From ${widget.listing.farm}",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Available: ${widget.listing.available}",
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Description: ${widget.listing.description}",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Type: ${widget.listing.productType}",
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Posted: ${widget.listing.posted.toLocal()}",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    widget.product.name,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.product.company,
-                    style: Theme.of(context).textTheme.bodySmall,
+                  IconButton(
+                    icon: inCart
+                        ? const Icon(Icons.remove_shopping_cart)
+                        : const Icon(Icons.shopping_cart),
+                    onPressed: toggleCart,
                   ),
                 ],
               ),
-            ),
-            // Product price
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                "\$${widget.product.price.toStringAsFixed(2)}",
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            // Delivery estimate if available, revisit this once app is more complete
-            // ignore: unnecessary_null_comparison
-            if (widget.product.deliveryEstimate != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                child: Text(
-                  "Delivery in ${widget.product.deliveryEstimate.item1} ${widget.product.deliveryEstimate.item2}",
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            // Toggle Add/Remove from Cart Button
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(
-                onPressed: toggleCart,
-                child: Text(inCart ? "Remove from Cart" : "Add to Cart"),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

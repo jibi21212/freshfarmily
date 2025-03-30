@@ -1,20 +1,75 @@
 // What populates the farmers marketplace (listings)
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:freshfarmily/models/listing.dart';
+import 'package:freshfarmily/views/home/farmer/make_listing.dart';
+import 'package:freshfarmily/widgets/item_cards/delivery_card.dart';
 
 class ListingCard extends StatelessWidget {
   final Listing listing;
-  final VoidCallback? onTap;     // For viewing more detailed stats or editing the listing
-  final VoidCallback? onEdit;    // Specific action to edit the listing
-  final VoidCallback? onDelete;  // Specific action to delete the listing
+  final VoidCallback? onTap;
 
   const ListingCard({
     super.key,
     required this.listing,
     this.onTap,
-    this.onEdit,
-    this.onDelete,
   });
+
+  // Add these methods to handle Firebase operations
+  void _handleEdit(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CombinedListingForm(
+          listing: listing,
+          farmerId: listing.farmerId,
+          ),
+      ),
+    );
+  }
+
+  void _handleDelete(BuildContext context) async {
+    // Show confirmation dialog
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Listing'),
+        content: const Text('Are you sure you want to delete this listing?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('product_listings')
+            .doc(listing.id)
+            .delete();
+
+        // Show success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Listing deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting listing: $e')),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,59 +82,63 @@ class ListingCard extends StatelessWidget {
           padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              // Display the product image from the Listing's product
               ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
                 child: Image.network(
-                  listing.product.imageUrl,
+                  listing.imageUrl,
                   width: 100,
                   height: 100,
                   fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(width: 12),
-              // Display listing details: product name, company, available quantity, etc.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      listing.product.name,
+                      listing.name,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "From ${listing.product.company}",
+                      "From ${listing.farm}",
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Available: ${listing.availableQuantity}",
+                      "Available: ${listing.available}",
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Posted: ${listing.posted.toLocal().toShortDateString()}",
+                      "Description: ${listing.description}",
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Type: ${listing.productType}",
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Posted: ${listing.posted.toLocal()}",
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
-              // Action buttons for editing or deleting the listing
-              // When editing, switch to another page or make a view that appears that allows farmer to change, and send API call
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (onEdit != null)
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: onEdit,
-                    ),
-                  if (onDelete != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: onDelete,
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _handleEdit(context),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => _handleDelete(context),
+                  ),
                 ],
               ),
             ],
@@ -87,12 +146,5 @@ class ListingCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-extension DateTimeExtension on DateTime {
-  String toShortDateString() {
-    // ignore: unnecessary_this
-    return "${this.day}/${this.month}/${this.year}";
   }
 }

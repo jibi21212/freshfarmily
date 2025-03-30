@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:freshfarmily/views/login/login.dart';
 
 class FarmerProfilePage extends StatefulWidget {
-  const FarmerProfilePage({super.key});
+  final String uid;
+  const FarmerProfilePage({super.key, required this.uid});
 
   @override
   State<FarmerProfilePage> createState() => _FarmerProfilePageState();
@@ -9,27 +13,65 @@ class FarmerProfilePage extends StatefulWidget {
 
 class _FarmerProfilePageState extends State<FarmerProfilePage> {
   bool isEditing = false;
+  bool isLoading = true;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
 
   // Dummy profile data. In production, get this from your backend.
-  String name = "John Doe";
-  String email = "john.doe@example.com";
-  String farmName = "Doe Farms";
-  String phone = "123-456-7890";
-  String profileImage = "https://via.placeholder.com/150";
+  String name = "";
+  String email = "";
+  String farmName = "";
+  String phone = "";
+  String farmAddress = "";
+  String profileImage = "";
 
   // Controllers for editing
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _farmController;
   late TextEditingController _phoneController;
+  late TextEditingController _addressController;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: name);
-    _emailController = TextEditingController(text: email);
-    _farmController = TextEditingController(text: farmName);
-    _phoneController = TextEditingController(text: phone);
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _farmController = TextEditingController();
+    _phoneController = TextEditingController();
+    _addressController = TextEditingController();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      DocumentSnapshot doc = await _firestore
+          .collection('farmers')
+          .doc(widget.uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        setState(() {
+          name = data['name'] ?? '';
+          email = data['email'] ?? '';
+          farmAddress = data['address'] ?? '';
+          profileImage = data['profileImage'] ?? '';  // If you have profile images
+          farmName = data['farmName'] ?? '';
+
+          
+          _nameController.text = name;
+          _emailController.text = email;
+          _addressController.text = farmAddress;
+          _farmController.text = farmName;
+          
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -38,6 +80,7 @@ class _FarmerProfilePageState extends State<FarmerProfilePage> {
     _emailController.dispose();
     _farmController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -47,19 +90,41 @@ class _FarmerProfilePageState extends State<FarmerProfilePage> {
     });
   }
 
-  void _saveProfile() {
-    // Save changes. Normally you'd also update the backend.
-    setState(() {
-      name = _nameController.text;
-      email = _emailController.text;
-      farmName = _farmController.text;
-      phone = _phoneController.text;
-      isEditing = false;
-    });
+  Future<void> _saveProfile() async{
+    try {
+      await _firestore.collection('farmers').doc(widget.uid).update({
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'address': _addressController.text,
+        'farmName' : _farmController.text,
+      });
+
+      setState(() {
+        name = _nameController.text;
+        email = _emailController.text;
+        farmName = _farmController.text;
+        phone = _phoneController.text;
+        farmAddress = _addressController.text;
+        isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text("Farmer Profile"),
@@ -78,8 +143,22 @@ class _FarmerProfilePageState extends State<FarmerProfilePage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: isEditing ? _buildEditForm() : _buildProfileView(),
-      ),
+        child: Column(
+          children: [
+            Expanded(
+              child: isEditing ? _buildEditForm() : _buildProfileView(),
+            ),
+            ElevatedButton(
+              onPressed: _signOut,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Sign Out"),
+            ),
+          ],
+        ),
+      )
     );
   }
 
@@ -131,6 +210,21 @@ class _FarmerProfilePageState extends State<FarmerProfilePage> {
     );
   }
 
+  Future<void> _signOut() async {
+    try {
+      await _auth.signOut();
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing out: $e')),
+      );
+    }
+  }
+
+
   Widget _buildEditForm() {
     // Editable form for profile fields.
     return ListView(
@@ -152,7 +246,7 @@ class _FarmerProfilePageState extends State<FarmerProfilePage> {
         ),
         TextFormField(
           controller: _farmController,
-          decoration: const InputDecoration(labelText: "Farm/Company Name"),
+          decoration: const InputDecoration(labelText: "Farm Name"),
         ),
         TextFormField(
           controller: _phoneController,
