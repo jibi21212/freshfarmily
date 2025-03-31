@@ -74,3 +74,7 @@ FreshFarmily addresses the gap between local farmers and consumers by providing 
 ## License
 
 This application is a prototype developed specifically for the Riipen Level UP program. Licensing and further usage rights are subject to conditions set forth by the program guidelines and project organizers.
+
+## Demo Video: 
+
+https://youtu.be/DTGMHdarT9g
