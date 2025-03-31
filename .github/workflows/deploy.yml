@@ -13,10 +13,11 @@ jobs:
       # Step 1: Checkout the repository.
       - uses: actions/checkout@v3
 
-      # Step 2: Install Flutter using a GitHub Action.
+      # Step 2: Install Flutter using the GitHub Action.
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.0'  # Use a version that includes Dart 3.7.0 or later
+          flutter-version: '3.13.9'  # Use a version that includes Dart >= 3.7.0
+          channel: 'stable'         # Explicitly set the channel
 
       # Step 3: Get dependencies.
       - name: Install dependencies
