@@ -16,7 +16,7 @@ jobs:
       # Step 2: Install Flutter using a GitHub Action.
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.0.0'  # Specify a fixed version of Flutter.
+          flutter-version: '4.0.0'  # Use a Flutter version that includes Dart SDK >= 3.7.0
 
       # Step 3: Get dependencies.
       - name: Install dependencies
