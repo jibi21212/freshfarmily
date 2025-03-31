@@ -8,7 +8,6 @@ class Delivery {
   final DeliveryStatus status;
   final double deliveryFee;
   final String listingName;
-  final String imageUrl; // optional
   
   Delivery({
     required this.id,
@@ -17,6 +16,6 @@ class Delivery {
     required this.status,
     required this.deliveryFee,
     required this.listingName,
-    this.imageUrl = '',
   });
+  
 }

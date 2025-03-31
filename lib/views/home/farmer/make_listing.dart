@@ -1,6 +1,6 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:freshfarmily/models/listing.dart';
@@ -33,12 +33,6 @@ class _CombinedListingFormState extends State<CombinedListingForm> {
   late String productType;
   late String description;
 
-  // Controller for the optional image URL text field.
-  late TextEditingController _imageUrlController;
-
-  // For local image picking.
-  XFile? _pickedImage;
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -58,40 +52,15 @@ class _CombinedListingFormState extends State<CombinedListingForm> {
       productType = '';
       description = '';
     }
-    // Pre-populate the image URL controller either with existing product image URL or empty.
-    _imageUrlController =
-        TextEditingController(text: widget.listing?.imageUrl ?? "");
   }
 
 
 
   @override
   void dispose() {
-    _imageUrlController.dispose();
     super.dispose();
   }
 
-  // Method for picking an image from the gallery.
-  Future<void> _pickImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _pickedImage = pickedFile;
-      });
-    }
-  }
-
-  // Dummy function for uploading an image to Firebase Storage.
-  // Replace this with your actual implementation using the firebase_storage package.
-  Future<String> _uploadImage(File imageFile) async {
-    // Example: Upload image file then return its download URL.
-    await Future.delayed(const Duration(seconds: 2)); // simulate upload delay
-    return "https://example.com/the-uploaded-image-url"; // Replace with real URL.
-  }
-
-  // Combined function to either create a new listing or update an existing one.
-  // Example modifications in the _submit() function
 
   Future<void> _submit() async {
       if (!_formKey.currentState!.validate()) return;
@@ -110,17 +79,6 @@ class _CombinedListingFormState extends State<CombinedListingForm> {
           final farmerData = farmerDoc.data() as Map<String, dynamic>;
           final farmName = farmerData['farmName'] ?? 'Unknown Farmer';
 
-
-          // Decide which image URL to use
-          String imageUrl = _imageUrlController.text.trim();
-          if (imageUrl.isEmpty && _pickedImage != null) {
-            imageUrl = await _uploadImage(File(_pickedImage!.path));
-          } else if (imageUrl.isEmpty && widget.listing != null) {
-            imageUrl = widget.listing!.imageUrl;
-          } else if (imageUrl.isEmpty) {
-            imageUrl = 'https://via.placeholder.com/150';
-          }
-
           
       
         final listingData = {
@@ -133,7 +91,6 @@ class _CombinedListingFormState extends State<CombinedListingForm> {
         'posted': DateTime.now(),
         'isActive': true,
         'farm': farmName,
-        'imageUrl': imageUrl,
         'description':description,
         };
   
@@ -218,17 +175,6 @@ class _CombinedListingFormState extends State<CombinedListingForm> {
   @override
   Widget build(BuildContext context) {
     // Display a preview of a locally picked image if available.
-    final Widget localImagePreview = _pickedImage != null
-        ? Image.file(
-            File(_pickedImage!.path),
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-          )
-        : (widget.listing != null && widget.listing!.imageUrl.isNotEmpty)
-            ? Image.network(widget.listing!.imageUrl,
-                width: 100, height: 100, fit: BoxFit.cover)
-            : const Text("No image selected");
 
     return Scaffold(
       appBar: AppBar(
@@ -285,27 +231,6 @@ class _CombinedListingFormState extends State<CombinedListingForm> {
                 validator: (value) =>
                     value == null || value.isEmpty ? "Description" : null,
                 onChanged: (value) => description = value,
-              ),
-              // IMAGE INPUT SECTION
-              
-              const SizedBox(height: 20),
-              // Option to Provide an Image URL
-              TextFormField(
-                controller: _imageUrlController,
-                decoration: const InputDecoration(
-                  labelText: "Or Paste Image URL",
-                ),
-                keyboardType: TextInputType.url,
-              ),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: _pickImage,
-                    child: const Text("Select Local Image"),
-                  ),
-                  const SizedBox(width: 10),
-                  localImagePreview,
-                ],
               ),
               const SizedBox(height: 20),
               ElevatedButton(

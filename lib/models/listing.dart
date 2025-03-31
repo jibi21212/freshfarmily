@@ -8,7 +8,6 @@ class Listing {
   final String name;
   final bool isActive;
   final double price;
-  String imageUrl;
   final String farm;
   final String description;
   final String productType;
@@ -21,7 +20,6 @@ class Listing {
     required this.posted,
     required this.price,
     this.isActive = true,
-    this.imageUrl = '',
     required this.farm,
     required this.description,
     required this.productType,
@@ -60,7 +58,6 @@ class Listing {
       farm: json['farm'] ?? '',
       description: json['description'] ?? '',
       productType: json['productType'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
     );
   }
 
@@ -76,7 +73,6 @@ class Listing {
       'farm': farm,
       'description': description,
       'productType': productType,
-      'imageUrl': imageUrl,
     };
   }
 }

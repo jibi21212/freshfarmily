@@ -30,7 +30,6 @@ class DeliveriesPage extends StatefulWidget {
 class _DeliveriesPageState extends State<DeliveriesPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late String userId;
-  final DateFormat _dateFormat = DateFormat.yMMMd().add_jm();
 
   @override
   void initState() {
@@ -98,9 +97,7 @@ class _DeliveriesPageState extends State<DeliveriesPage> {
               final firstItem = (data['items'] as List).first as Map<String, dynamic>;
               listingName = firstItem['name'] as String? ?? '';
             }
-            final String imageUrl = (data['imageUrl'] as String?)?.isNotEmpty == true
-                ? data['imageUrl'] as String
-                : 'https://via.placeholder.com/150';
+
             return Delivery(
               id: doc.id,
               deliveryAddress: data['deliveryAddress'] as String? ?? '',
@@ -108,7 +105,6 @@ class _DeliveriesPageState extends State<DeliveriesPage> {
               status: status,
               deliveryFee: (data['deliveryFee'] ?? 0).toDouble(),
               listingName: listingName,
-              imageUrl: imageUrl,
             );
           }).toList();
 

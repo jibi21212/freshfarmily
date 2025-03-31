@@ -66,8 +66,6 @@ class ListingsPage extends StatelessWidget {
                     postedValue = DateTime.now();
                   }
 
-                  // Provide a default image URL if missing.
-                  String imageUrl = data['imageUrl'] ?? 'https://via.placeholder.com/150';
 
                   final listing = Listing(
                     id: doc.id,
@@ -80,7 +78,6 @@ class ListingsPage extends StatelessWidget {
                     farmerId: farmerId,
                     description: data['description'] ?? '',
                     productType: data['productType'] ?? '',
-                    imageUrl: imageUrl,
                   );
                   
                   return ListingCard(

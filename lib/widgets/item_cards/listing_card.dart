@@ -82,15 +82,6 @@ class ListingCard extends StatelessWidget {
           padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Image.network(
-                  listing.imageUrl,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
-              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

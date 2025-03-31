@@ -21,14 +21,6 @@ class DeliveryCard extends StatelessWidget {
     final formattedTime = DateFormat.yMMMd().add_jm().format(delivery.scheduledTime.toLocal());
     return Card(
       child: ListTile(
-        leading: Image.network(
-          delivery.imageUrl.isNotEmpty
-              ? delivery.imageUrl
-              : 'https://via.placeholder.com/150',
-          width: 60,
-          height: 60,
-          fit: BoxFit.cover,
-        ),
         title: Text('Order: ${delivery.id}'),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

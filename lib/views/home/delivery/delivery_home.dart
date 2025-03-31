@@ -32,7 +32,8 @@ class DeliveryHomePage extends StatefulWidget {
 class _DeliveryHomePageState extends State<DeliveryHomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late String userId;
-  final DateFormat _dateFormat = DateFormat.yMMMd().add_jm();
+
+  
 
   @override
   void initState() {
@@ -107,11 +108,6 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
               listingName = firstItem['name'] as String? ?? '';
             }
 
-            // Use imageUrl or fallback.
-            final String imageUrl = (data['imageUrl'] as String?)?.isNotEmpty == true
-                ? data['imageUrl'] as String
-                : 'https://via.placeholder.com/150';
-
             return Delivery(
               id: doc.id,
               deliveryAddress: data['deliveryAddress'] as String? ?? '',
@@ -119,7 +115,6 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
               status: status,
               deliveryFee: (data['deliveryFee'] ?? 0).toDouble(),
               listingName: listingName,
-              imageUrl: imageUrl,
             );
           }).toList();
 

@@ -74,9 +74,9 @@ class _ProductCardState extends State<ProductCard> {
             'price': widget.listing.price,
             'quantity': 1, // Default cart quantity
             'available': widget.listing.available, // So we can limit increments in the cart
-            'imageUrl': widget.listing.imageUrl,
             'addedAt': FieldValue.serverTimestamp(),
             'description': widget.listing.description,
+            "farmerId": widget.listing.farmerId,
           });
 
       } else {
@@ -113,15 +113,7 @@ class _ProductCardState extends State<ProductCard> {
           padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Image.network(
-                  widget.listing.imageUrl,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
-              ),
+              
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
